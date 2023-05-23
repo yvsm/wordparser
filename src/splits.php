@@ -17,7 +17,9 @@ namespace zunyunkeji\wordparser;
 
 
 class splits{
-	
+	//定义自定义词库路径
+	public $dict_dir = __DIR__.'/dict/train';
+
 	//定义基本词库位置
 	public $word_dict = __DIR__.'/dict/split.dict';
 	
@@ -36,6 +38,13 @@ class splits{
 			$this->train_dict = $train_dict;
 		}
     }
+
+    /* 设置词库目录 */
+	public function set_dict_dir($dict_dir){
+		if(!empty($dict_dir)){
+			$this->dict_dir = $dict_dir;
+		}
+	}
 	
 	public function set_dict($dict=[]){
 		if(!empty($dict)){
@@ -57,13 +66,32 @@ class splits{
 	 */
  
     public function get($content,$title=''){
-        $word = file_get_contents($this->train_dict).",".file_get_contents($this->word_dict);
-        $tags_array = explode(',', $word);
+		// 获取目录下所有扩展名为 .dict 的文本文件
+		$files = glob($this->dict_dir . '/*.dict');
 		
-		if($this->dict){
+		// 循环读取每个文本文件的内容
+		$tags_array = array();
+		foreach ($files as $file) {
+		    $word = file_get_contents($file);
+			$tags_array = array_merge($tags_array,explode(',', $word));
+		}
+
+		if($this->train_dict && file_exists($this->train_dict)){
+			$word = file_get_contents($this->train_dict);
+			$tags_array = array_merge($tags_array,explode(',', $word));
+		}
+
+		if($this->word_dict && file_exists($this->word_dict)){
+			$word = file_get_contents($this->word_dict);
+			$tags_array = array_merge($tags_array,explode(',', $word));
+		}
+
+		if(is_array($this->dict) && !empty($this->dict)){
 			$tags_array = array_merge($tags_array,$this->dict);
 		}
-		
+
+		$tags_array = array_unique($tags_array);
+
         $t_tags = array();
         $c_tags = array();
         $n_tags = array();

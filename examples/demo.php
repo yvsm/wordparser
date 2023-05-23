@@ -2,8 +2,8 @@
 require_once __DIR__ . '/../src/splits.php';
 require_once __DIR__ . '/../src/helper.php';
 
-$title = "13800138000 029-88888888 眉县猕猴桃之乡 -  眉县猕猴桃  猕猴桃原生态原产地 眉县猕猴桃之乡 -  眉县猕猴桃  猕猴桃原生态原产地";
-$content="眉县猕猴桃之乡,眉县田家寨,徐香猕猴桃,猕猴桃,奇异果,猕猴桃原生态原产地。代办批发,团购,代理,快递代发,价格优惠。陕西&middot;眉县 全国优质猕猴桃生产基地县、猕猴桃标准化生产示范区、猕猴桃生产质量工作先进单位、中国猕猴桃无公害科技示范县";
+$title = "HTTP缓存实际表现探究-使用node.js和chrome";
+$content="前言， http缓存作为前端面试中经常被提问的一环，相信很多人或多或少都会有基本概念，本文基于此，使用node和chrome就浏览器对HTTP各种缓存的表现做一探究。";
 $splitword = new \zunyunkeji\wordparser\splits();
 
 /* 分词*/

@@ -2,7 +2,7 @@
 基于基础词库并结合自定义词库进行分词的系统，也可进行敏感词检测。
 
 ## 安装
-> composer require zunyunkeji/wordparser
+> composer require zunyunkeji/wordparser "dev-main"
 
 ## 示例
 
