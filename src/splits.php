@@ -18,13 +18,10 @@ namespace zunyunkeji\wordparser;
 
 class splits{
 	//定义自定义词库路径
-	public $dict_dir = __DIR__.'/dict/train';
+	public $dict_dir = __DIR__.'/dict';
 
-	//定义基本词库位置
-	public $word_dict = __DIR__.'/dict/split.dict';
-	
 	//定义自定义词库位置
-	public $train_dict = __DIR__.'/dict/split.train.dict';
+	public $train_dict = __DIR__.'/dict/train.dict';
 	
 	public $dict = [];
 	
@@ -46,6 +43,7 @@ class splits{
 		}
 	}
 	
+	/* 设置自定义词库 */
 	public function set_dict($dict=[]){
 		if(!empty($dict)){
 			$this->dict = $dict;
@@ -70,19 +68,14 @@ class splits{
 		$files = glob($this->dict_dir . '/*.dict');
 		
 		// 循环读取每个文本文件的内容
-		$tags_array = array();
+		$tags_array = [];
 		foreach ($files as $file) {
 		    $word = file_get_contents($file);
 			$tags_array = array_merge($tags_array,explode(',', $word));
 		}
 
-		if($this->train_dict && file_exists($this->train_dict)){
+		if($this->train_dict && !in_array($this->train_dict, $files) && file_exists($this->train_dict)){
 			$word = file_get_contents($this->train_dict);
-			$tags_array = array_merge($tags_array,explode(',', $word));
-		}
-
-		if($this->word_dict && file_exists($this->word_dict)){
-			$word = file_get_contents($this->word_dict);
 			$tags_array = array_merge($tags_array,explode(',', $word));
 		}
 
@@ -92,10 +85,10 @@ class splits{
 
 		$tags_array = array_unique($tags_array);
 
-        $t_tags = array();
-        $c_tags = array();
-        $n_tags = array();
-        $n_content = array();
+        $t_tags = [];
+        $c_tags = [];
+        $n_tags = [];
+        $n_content = [];
         $content=$this->clearhtml($content);
         if(!empty($title)){
             $title=$this->clearhtml($title);
@@ -148,7 +141,7 @@ class splits{
 	 * @return string
 	 */
     public function findword($keyword,$content){
-        $n_content=array();
+        $n_content=[];
         $content=$this->scontent($content);
         foreach($content as $value) {
            if(strpos($value,$keyword)!==false){
@@ -192,10 +185,16 @@ class splits{
 	 * @param string $keyword 文本
 	 * @return bool
 	 */
-    public function add($keyword){
+    public function add($keyword,$dict_file=''){
+    	if(empty($keyword)){
+    		return false;
+    	}
+    	if(!$dict_file){
+    		$dict_file = $this->train_dict;
+    	}
 		if(is_array($keyword)){
 			foreach($keyword as $key){
-				$this->add($key);
+				$this->add($key,$dict_file);
 			}
 			return true;
 		}
@@ -203,14 +202,32 @@ class splits{
 		$keyword = $this->clearhtml($keyword);
 		if(empty($keyword)) return false;
 		
-		$word = file_get_contents($this->train_dict);
-		$words = $word.",".file_get_contents($this->word_dict);
+		$words = '--START--';
+
+		// 获取目录下所有扩展名为 .dict 的文本文件
+		$files = glob($this->dict_dir . '/*.dict');
+		
+		// 循环读取每个文本文件的内容
+		foreach ($files as $file) {
+		    $words = $words.','.file_get_contents($file);
+		}
+
+		if($this->train_dict && $this->train_dict!=$dict_file && !in_array($this->train_dict, $files) && file_exists($this->train_dict)){
+			$words = $words.','.file_get_contents($this->train_dict);
+		}
+
+		$word = '';
+		if($dict_file && file_exists($dict_file)){
+			$word = file_get_contents($dict_file);
+		}else{
+			$word = '--START--,--END--';
+		}
 		
         if(strpos($words,",{$keyword},") !== false){
             return false;
         }else{
-            $word = str_replace("--END--","".$keyword.",--END--",$word);
-            file_put_contents($this->train_dict,$word);
+            $word = str_replace("--END--","{$keyword},--END--",$word);
+            file_put_contents($dict_file,$word);
             return true;
         }
     }

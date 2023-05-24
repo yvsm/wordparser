@@ -13,5 +13,5 @@ print_r($splitword->get($content,$title));
 /* 获取前5个分词 */
 print_r(splits_top($content,$title,5));
 
-//$splitword->add("眉县猕猴桃");
-//$splitword->add("徐香猕猴桃"); 
+//$splitword->add("眉县猕猴桃", __DIR__.'/dict/other.dict');
+//$splitword->add("HTTP缓存", __DIR__.'/dict/it.dict'); 
