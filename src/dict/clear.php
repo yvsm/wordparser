@@ -17,11 +17,10 @@ foreach ($files as $file) {
     // 过滤长度为1的单词和特殊字符或标点符号
     foreach ($word_list as &$word) {
         $word = trim($word); // 去除前后空格
-
         if (mb_strlen($word, 'utf-8') === 1) { // 去除长度为1的单词
             $word = null;
         } else {
-            $word = preg_replace('/[[:punct:]]+/u', '', $word); // 去除特殊字符或标点符号
+            $word = str_replace(["*",'：','“','”','|','、','】','【','，','。','{','}','%','……','&','！'],'', $word); // 去除特殊字符或标点符号
         }
     }
 
