@@ -49,3 +49,17 @@ if (!function_exists('splits_top')) {
         return (new splits())->splits_top($content,$title,$top);
     }
 }
+
+if (!function_exists('get_splits')) {
+	/**
+	 * 分隔并计算关键词
+	 * @demo splits_get($content,$title)
+	 * @param content $str 需要分隔计算的内容
+	 * @param title $str 需要分隔计算的标题
+	 * @return array
+	 */
+    function get_splits($content,$limt=20)
+    {
+        return (new splits())->get_splits($content,$limt);
+    }
+}

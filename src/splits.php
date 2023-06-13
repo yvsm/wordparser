@@ -85,6 +85,10 @@ class splits{
 
 		$tags_array = array_unique($tags_array);
 
+		usort($tags_array, function($a, $b){
+		    return strlen($b) - strlen($a);
+		});
+
         $t_tags = [];
         $c_tags = [];
         $n_tags = [];
@@ -93,7 +97,7 @@ class splits{
         if(!empty($title)){
             $title=$this->clearhtml($title);
             foreach($tags_array as $t_tag) {
-                if(strpos($title, $t_tag) !== false){
+                if(strpos(strtolower($title), strtolower($t_tag)) !== false){
                     $t_tags[] = $t_tag;
                 }
             }
@@ -102,13 +106,13 @@ class splits{
             }
             $n_content=implode("|->|",array_unique($n_content));
             foreach($tags_array as $n_tag) {
-                if(strpos($n_content, $n_tag) !== false){
+                if(strpos(strtolower($n_content), strtolower($n_tag)) !== false){
                     $n_tags[] = $n_tag;
                 }
             }
         }
         foreach($tags_array as $c_tag) {
-            if(strpos($content, $c_tag) !== false){
+            if(strpos(strtolower($content), strtolower($c_tag)) !== false){
                 $c_tags[] = $c_tag;
             }
         }
@@ -119,6 +123,68 @@ class splits{
             $tags=array("c_tags"=>array_unique($c_tags),'tags_count'=>array_count_values($c_tags));
         }
         return $tags;
+    }
+
+	/**
+	 * 分隔并计算关键词
+	 * @demo $this->get($content,$title)
+	 * @param content $str 需要分隔计算的内容
+	 * @param title $str 需要分隔计算的标题
+	 * @return array[
+	 *		t_tags	//标题关键词组
+	 *		c_tags	//全文关键词组
+	 *		n_tags	//与标题关键词组相关段落的关键词组
+	 *		tags_count	//关键词出现次数
+	 *	]
+	 */
+ 
+    public function get_splits($content, $limt=20){
+		// 获取目录下所有扩展名为 .dict 的文本文件
+		$files = glob($this->dict_dir . '/*.dict');
+		
+		// 循环读取每个文本文件的内容
+		$tags_array = [];
+		foreach ($files as $file) {
+		    $word = file_get_contents($file);
+			$tags_array = array_merge($tags_array,explode(',', $word));
+		}
+
+		if($this->train_dict && !in_array($this->train_dict, $files) && file_exists($this->train_dict)){
+			$word = file_get_contents($this->train_dict);
+			$tags_array = array_merge($tags_array,explode(',', $word));
+		}
+
+		if(is_array($this->dict) && !empty($this->dict)){
+			$tags_array = array_merge($tags_array,$this->dict);
+		}
+
+		$tags_array = array_unique($tags_array);
+		
+		usort($tags_array, function($a, $b){
+		    return strlen($b) - strlen($a);
+		});
+
+        $tags = [];
+  
+        $content=$this->clearhtml($content);
+        foreach($tags_array as $tag) {
+            if(strpos(strtolower($content), strtolower($tag)) !== false){
+                $tags[] = $tag;
+            }
+        }
+        $tags = array_unique($tags);
+
+		// 使用自定义排序函数进行去重
+		usort($tags, function($a, $b) {
+		    if (strtolower($a) == strtolower($b)) {
+		        if ($a === $b) return 0; // 相同时保留第一个出现的元素
+		        return strcmp($a, $b); // 大小写相同时，保留原始顺序
+		    }
+		    return strcasecmp($a, $b); // 忽略大小写排序
+		});
+		$tags = array_unique($tags, SORT_REGULAR);
+
+        return array_slice($tags, 0, $limt);
     }
 	
 	/*
@@ -170,13 +236,9 @@ class splits{
 	 * @param string $content 文本
 	 * @return string
 	 */
-    public function clearhtml($content){
-        $content = strip_tags($content,"");
-        $content = str_replace(array("\r\n", "\r", "\n"), "", $content);   
-        $content = str_replace("　","",$content);
-        $content = str_replace("&nbsp;","",$content);
-        $content = str_replace(" ","",$content);
-        return ltrim(trim($content));
+    public function clearhtml($content=""){
+        $content = strip_tags($content);
+        return trim($content);
     }
 
 
@@ -192,15 +254,6 @@ class splits{
     	if(!$dict_file){
     		$dict_file = $this->train_dict;
     	}
-		if(is_array($keyword)){
-			foreach($keyword as $key){
-				$this->add($key,$dict_file);
-			}
-			return true;
-		}
-		
-		$keyword = $this->clearhtml($keyword);
-		if(empty($keyword)) return false;
 		
 		$words = '--START--';
 
@@ -222,13 +275,41 @@ class splits{
 		}else{
 			$word = '--START--,--END--';
 		}
-		
-        if(strpos($words,",{$keyword},") !== false){
-            return false;
-        }else{
-            $word = str_replace("--END--","{$keyword},--END--",$word);
-            file_put_contents($dict_file,$word);
-            return true;
-        }
+
+		$lower_words = strtolower($words);
+
+		if(is_array($keyword)){
+			foreach($keyword as $key){
+				if(empty($key)){
+		    		continue;
+		    	}
+		    	$key = $this->clearhtml($key);
+		    	if (mb_strlen($key, 'utf-8') === 1) { // 去除长度为1的单词
+		            continue;
+		        } 
+				$lowe_keyword = strtolower($key);
+				if(strpos($lower_words,",{$lowe_keyword},") !== false){
+					continue;
+				}else{
+					$word = str_replace("--END--","{$key},--END--",$word);
+				}
+			}
+			file_put_contents($dict_file,$word);
+			return true;
+		}else{
+			$keyword = $this->clearhtml($keyword);;
+			if(empty($keyword) || mb_strlen($key, 'utf-8') === 1) { // 去除长度为1的单词
+		        return false;
+		    } 
+			$lowe_keyword = strtolower($keyword);
+			if(strpos($lower_words,",{$lowe_keyword},") !== false){
+				return false;
+			}else{
+				$word = str_replace("--END--","{$keyword},--END--",$word);
+				file_put_contents($dict_file,$word);
+				return true;
+			}
+		}
+
     }
 }
