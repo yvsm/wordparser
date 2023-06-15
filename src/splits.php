@@ -159,30 +159,25 @@ class splits{
 		}
 
 		$tags_array = array_unique($tags_array);
-		
-		usort($tags_array, function($a, $b){
-		    return strlen($b) - strlen($a);
-		});
 
         $tags = [];
-  
         $content=$this->clearhtml($content);
         foreach($tags_array as $tag) {
             if(strpos(strtolower($content), strtolower($tag)) !== false){
                 $tags[] = $tag;
             }
         }
-        $tags = array_unique($tags);
 
-		// 使用自定义排序函数进行去重
-		usort($tags, function($a, $b) {
-		    if (strtolower($a) == strtolower($b)) {
-		        if ($a === $b) return 0; // 相同时保留第一个出现的元素
-		        return strcmp($a, $b); // 大小写相同时，保留原始顺序
+        $tags = array_unique($tags, SORT_STRING | SORT_FLAG_CASE);
+
+        $tags = array_filter($tags, function ($value) use ($tags) {
+		    foreach ($tags as $item) {
+		        if ($item !== $value && strpos(strtolower($item), strtolower($value)) !== false) {
+		            return false;
+		        }
 		    }
-		    return strcasecmp($a, $b); // 忽略大小写排序
+		    return true;
 		});
-		$tags = array_unique($tags, SORT_REGULAR);
 
         return array_slice($tags, 0, $limt);
     }
